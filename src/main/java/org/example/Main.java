@@ -1,16 +1,14 @@
 package org.example;
 
 
-import org.example.model.BaseEvent;
+import org.example.events.model.BaseEvent;
 import org.example.observer.AlertObserver;
 import org.example.observer.LoggerObserver;
 import org.example.processor.EventProcessor;
 import org.example.util.EventParser;
 
 import java.net.URISyntaxException;
-import java.nio.file.Paths;
 import java.util.List;
-import java.util.Objects;
 
 public class Main {
     public static void main(String[] args) throws URISyntaxException {

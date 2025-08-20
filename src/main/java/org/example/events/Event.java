@@ -1,7 +1,6 @@
-package org.example.model;
+package org.example.events;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
 
 public abstract class Event {
 

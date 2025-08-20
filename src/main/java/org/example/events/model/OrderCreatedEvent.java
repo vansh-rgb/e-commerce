@@ -1,14 +1,12 @@
-package org.example.model;
+package org.example.events.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.Setter;
+import org.example.domain.OrderItem;
+import org.example.events.Event;
 
 import java.time.ZonedDateTime;
-import java.util.Date;
 import java.util.List;
 
 public class OrderCreatedEvent extends Event {

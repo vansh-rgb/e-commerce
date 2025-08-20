@@ -1,6 +1,8 @@
 package org.example.processor;
 
-import org.example.model.*;
+import org.example.domain.Order;
+import org.example.domain.OrderStatus;
+import org.example.events.model.*;
 import org.example.observer.Observer;
 
 import java.util.ArrayList;

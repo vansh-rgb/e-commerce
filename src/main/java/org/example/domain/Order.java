@@ -1,8 +1,9 @@
-package org.example.model;
+package org.example.domain;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import org.example.events.Event;
 
 import java.util.ArrayList;
 import java.util.List;

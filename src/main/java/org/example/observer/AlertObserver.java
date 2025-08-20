@@ -1,7 +1,7 @@
 package org.example.observer;
 
-import org.example.model.BaseEvent;
-import org.example.model.Order;
+import org.example.events.model.BaseEvent;
+import org.example.domain.Order;
 
 public class AlertObserver implements Observer{
     @Override
