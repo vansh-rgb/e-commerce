@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @AllArgsConstructor
@@ -22,4 +23,17 @@ public class Order {
     private OrderStatus orderStatus;
 
     private List<String> eventHistory;
+
+    public Order(String orderId, String customerId, List<Item> items, double totalAmount) {
+        this.orderId = orderId;
+        this.customerId = customerId;
+        this.items = items;
+        this.totalAmount = totalAmount;
+        this.orderStatus = OrderStatus.PENDING;
+        this.eventHistory = new ArrayList<>();
+    }
+
+    public void addEventToHistory(String eventId) {
+        this.eventHistory.add(eventId);
+    }
 }
