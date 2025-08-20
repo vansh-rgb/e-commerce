@@ -1,10 +1,12 @@
 package org.example;
 
 
-import org.example.events.model.BaseEvent;
-import org.example.observer.AlertObserver;
-import org.example.observer.LoggerObserver;
+import org.example.events.Event;
+import org.example.observer.AlertEventObserver;
+import org.example.observer.EventPublisher;
+import org.example.observer.LoggerEventObserver;
 import org.example.processor.EventProcessor;
+import org.example.repository.OrderRepository;
 import org.example.util.EventParser;
 
 import java.net.URISyntaxException;
@@ -13,27 +15,26 @@ import java.util.List;
 public class Main {
     public static void main(String[] args) throws URISyntaxException {
 
-        EventParser parser = new EventParser();
-        EventProcessor processor = new EventProcessor();
+        System.out.println("--- Order Processing System Simulation Starting ---");
 
-        LoggerObserver loggerObserver = new LoggerObserver();
-        AlertObserver alertObserver = new AlertObserver();
+        EventParser eventReader = new EventParser();
+        OrderRepository orderRepository = new OrderRepository();
+        EventPublisher eventPublisher = new EventPublisher();
+        EventProcessor eventProcessor = new EventProcessor(orderRepository, eventPublisher);
 
-        processor.addObserver(loggerObserver);
-        processor.addObserver(alertObserver);
+        LoggerEventObserver loggerObserver = new LoggerEventObserver();
+        AlertEventObserver alertObserver = new AlertEventObserver();
 
-        String filePath = System.getProperty("user.dir") + "/src/main/resources/events.txt";
-        List<BaseEvent> events = parser.readFromFileEvent(filePath);
+        eventPublisher.subscribe(loggerObserver);
+        eventPublisher.subscribe(alertObserver);
 
-        if (events.isEmpty()) {
-            System.out.println("No events found to process.");
-            return;
+        List<Event> events = eventReader.readEvents("events.txt");
+
+        if (!events.isEmpty()) {
+            System.out.println("\n--- Processing " + events.size() + " events ---");
+            eventProcessor.processEvents(events);
         }
 
-        System.out.println("Starting event processing for " + events.size() + " events.");
-
-        processor.processEvents(events);
-
-        System.out.println("Event processing finished.");
+        System.out.println("\n--- Order Processing System Simulation Finished ---");
     }
 }

@@ -2,105 +2,95 @@ package org.example.processor;
 
 import org.example.domain.Order;
 import org.example.domain.OrderStatus;
+import org.example.events.Event;
 import org.example.events.model.*;
-import org.example.observer.Observer;
+import org.example.observer.EventObserver;
+import org.example.observer.EventPublisher;
+import org.example.repository.OrderRepository;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 
 public class EventProcessor {
 
-    private final Map<String, Order> orders = new HashMap<>();
-    private final List<Observer> observers = new ArrayList<>();
+    private final OrderRepository orderRepository;
+    private final EventPublisher eventPublisher;
 
-    public void addObserver(Observer observer) {
-        observers.add(observer);
+    public EventProcessor(OrderRepository orderRepository, EventPublisher eventPublisher) {
+        this.orderRepository = orderRepository;
+        this.eventPublisher = eventPublisher;
     }
 
-    public void processEvents(List<BaseEvent> events) {
-        for(BaseEvent event: events) {
-            System.out.println("Processing Event: " + event.getEventId() + "(" + event.getEventType() + ")");
+    public void processEvents(List<Event> events) {
+        events.forEach(this::process);
+    }
 
-            Order order = orders.get(event.getOrderId());
-
-            switch (event.getEventType()) {
-                case "OrderCreated":
-                    handleOrderCreatedEvent((OrderCreatedEvent) event);
-                    break;
-                case "PaymentReceived":
-                    handlePaymentReceivedEvent((PaymentReceivedEvent) event);
-                    break;
-                case "ShippingScheduled":
-                    handleShippingScheduledEvent((ShippingScheduledEvent) event);
-                    break;
-                case "OrderCancelled":
-                    handleOrderCancelledEvent((OrderCancelledEvent) event);
-                    break;
-                default:
-                    System.err.println("Unknown Event Type: " + event.getEventType());
-            }
-            if(order!=null) {
-                notifyObservers(order, event);
+    private void process(Event event) {
+        switch (event) {
+            case OrderCreatedEvent orderCreatedEvent -> handleOrderCreated(orderCreatedEvent);
+            case PaymentReceivedEvent paymentReceivedEvent -> handlePaymentReceived(paymentReceivedEvent);
+            case ShippingScheduledEvent shippingScheduledEvent -> handleShippingScheduled(shippingScheduledEvent);
+            case OrderCancelledEvent orderCancelledEvent -> handleOrderCancelled(orderCancelledEvent);
+            case null, default -> {
+                assert event != null;
+                handleUnknownEvent(event);
             }
         }
     }
 
-    private void handleOrderCreatedEvent(OrderCreatedEvent event) {
-        Order newOrder = new Order(
+    private void handleOrderCreated(OrderCreatedEvent event) {
+        Order order = new Order(
                 event.getOrderId(),
                 event.getCustomerId(),
                 event.getItems(),
                 event.getTotalAmount()
         );
-        orders.put(newOrder.getOrderId(), newOrder);
-        newOrder.addEventToHistory(event.getEventId());
-        System.out.println("Created new order: " + newOrder.getOrderId());
+        updateOrderStateAndNotify(order, OrderStatus.PENDING, event);
     }
 
-    private void handlePaymentReceivedEvent(PaymentReceivedEvent event) {
-        Order order = orders.get(event.getOrderId());
-        if (order != null) {
+    private void handlePaymentReceived(PaymentReceivedEvent event) {
+        findOrder(event.getOrderId()).ifPresent(order -> {
+            OrderStatus newStatus;
             if (event.getAmountPaid() >= order.getTotalAmount()) {
-                order.setOrderStatus(OrderStatus.PAID);
-                order.addEventToHistory(event.getEventId());
-                System.out.println("Order " + order.getOrderId() + " status updated to PAID.");
+                newStatus = OrderStatus.PAID;
+            } else if (event.getAmountPaid() > 0) {
+                newStatus = OrderStatus.PARTIALLY_PAID;
             } else {
-                System.out.println("Payment received for order " + order.getOrderId() + " is partial. Status remains PENDING.");
+                newStatus = OrderStatus.FAILED;
             }
-        } else {
-            System.err.println("Order not found for PaymentReceivedEvent: " + event.getOrderId());
-        }
+            updateOrderStateAndNotify(order, newStatus, event);
+        });
     }
 
-    private void handleShippingScheduledEvent(ShippingScheduledEvent event) {
-        Order order = orders.get(event.getOrderId());
-        if (order != null) {
-            order.setOrderStatus(OrderStatus.SHIPPED);
-            order.addEventToHistory(event.getEventId());
-            System.out.println("Order " + order.getOrderId() + " status updated to SHIPPED.");
-        } else {
-            System.err.println("Order not found for ShippingScheduledEvent: " + event.getOrderId());
-        }
+    private void handleShippingScheduled(ShippingScheduledEvent event) {
+        findOrder(event.getOrderId()).ifPresent(order ->
+                updateOrderStateAndNotify(order, OrderStatus.SHIPPED, event)
+        );
     }
 
-    private void handleOrderCancelledEvent(OrderCancelledEvent event) {
-        Order order = orders.get(event.getOrderId());
-        if (order != null) {
-            order.setOrderStatus(OrderStatus.CANCELLED);
-            order.addEventToHistory(event.getEventId());
-            System.out.println("Order " + order.getOrderId() + " status updated to CANCELLED.");
-        } else {
-            System.err.println("Order not found for OrderCancelledEvent: " + event.getOrderId());
-        }
+    private void handleOrderCancelled(OrderCancelledEvent event) {
+        findOrder(event.getOrderId()).ifPresent(order ->
+                updateOrderStateAndNotify(order, OrderStatus.CANCELLED, event)
+        );
     }
 
-    private void notifyObservers(Order order, BaseEvent event) {
-        for (Observer observer : observers) {
-            observer.update(order, event);
+    private void handleUnknownEvent(Event event) {
+        System.err.println("Warning: Unknown event type '" + event.getEventType() + "' for event ID: " + event.getEventId());
+    }
+
+    private Optional<Order> findOrder(String orderId) {
+        Optional<Order> orderOpt = orderRepository.findById(orderId);
+        if (orderOpt.isEmpty()) {
+            System.err.println("Warning: Order with ID '" + orderId + "' not found for processing event.");
         }
+        return orderOpt;
+    }
+
+    private void updateOrderStateAndNotify(Order order, OrderStatus newStatus, Event event) {
+        order.setStatus(newStatus);
+        order.addEventToHistory(event);
+        orderRepository.save(order);
+        eventPublisher.notify(event, order);
     }
 
 }
