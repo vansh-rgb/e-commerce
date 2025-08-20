@@ -1,19 +1,34 @@
 package org.example.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+
+import java.time.ZonedDateTime;
 import java.util.Date;
 
-@Getter
-@Setter
-public class ShippingScheduledEvent extends BaseEvent{
+public class ShippingScheduledEvent extends Event {
+    private final String orderId;
+    private final ZonedDateTime shippingDate;
 
-    private Date shippingDate;
-
-    public ShippingScheduledEvent(String eventId, Date timestamp, String orderId, Date shippingDate) {
-        super(eventId, timestamp, "ShippingScheduled", orderId);
+    @JsonCreator
+    public ShippingScheduledEvent(
+            @JsonProperty("eventId") String eventId,
+            @JsonProperty("timestamp") ZonedDateTime timestamp,
+            @JsonProperty("orderId") String orderId,
+            @JsonProperty("shippingDate") ZonedDateTime shippingDate) {
+        super(eventId, timestamp);
+        this.orderId = orderId;
         this.shippingDate = shippingDate;
     }
 
+    @Override
+    public String getOrderId() { return orderId; }
+    @Override
+    public String getEventType() { return "ShippingScheduled"; }
+
+    public ZonedDateTime getShippingDate() { return shippingDate; }
 }

@@ -1,12 +1,22 @@
 package org.example.processor;
 
 import org.example.model.*;
+import org.example.observer.Observer;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 
 public class EventProcessor {
 
     private final Map<String, Order> orders = new HashMap<>();
+    private final List<Observer> observers = new ArrayList<>();
+
+    public void addObserver(Observer observer) {
+        observers.add(observer);
+    }
 
     public void processEvents(List<BaseEvent> events) {
         for(BaseEvent event: events) {
@@ -82,6 +92,12 @@ public class EventProcessor {
             System.out.println("Order " + order.getOrderId() + " status updated to CANCELLED.");
         } else {
             System.err.println("Order not found for OrderCancelledEvent: " + event.getOrderId());
+        }
+    }
+
+    private void notifyObservers(Order order, BaseEvent event) {
+        for (Observer observer : observers) {
+            observer.update(order, event);
         }
     }
 

@@ -1,10 +1,12 @@
 package org.example.model;
 
 import lombok.AllArgsConstructor;
+import lombok.NoArgsConstructor;
 
 import java.util.Date;
 
 @AllArgsConstructor
+@NoArgsConstructor
 public abstract class BaseEvent implements Event{
 
     protected String eventId;

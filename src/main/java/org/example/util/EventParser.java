@@ -12,30 +12,29 @@ import java.util.List;
 
 public class EventParser {
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
+    public List<Event> readEvents(String resourceFileName) {
+        System.out.println("🚀 Starting event ingestion from file: " + resourceFileName);
 
-    public EventParser() {
-        SimpleModule module = new SimpleModule();
-
-        module.addAbstractTypeMapping(BaseEvent.class, OrderCreatedEvent.class);
-        module.addAbstractTypeMapping(BaseEvent.class, PaymentReceivedEvent.class);
-        module.addAbstractTypeMapping(BaseEvent.class, ShippingScheduledEvent.class);
-        module.addAbstractTypeMapping(BaseEvent.class, OrderCancelledEvent.class);
-
-        objectMapper.registerModule(module);
-    }
-
-    public List<BaseEvent> readFromFileEvent(String path) {
-        List<BaseEvent> events = new ArrayList<>();
-
-        try (BufferedReader reader = new BufferedReader(new FileReader(path))) {
-            String line;
-            while((line = reader.readLine()) != null ) {
-                BaseEvent event = objectMapper.readValue(line, BaseEvent.class);
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream(resourceFileName)) {
+            if (is == null) {
+                System.err.println("❌ Critical Error: Resource file not found: " + resourceFileName);
+                throw new IllegalArgumentException("File not found in resources: " + resourceFileName);
             }
-        } catch (Exception e) {
+
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+                List<Event> events = reader.lines()
+                        .map(EventDeserializer::deserialize)
+                        .filter(Objects::nonNull)
+                        .collect(Collectors.toList());
+
+                System.out.println("✅ Ingestion complete. Successfully parsed " + events.size() + " events.");
+                return events;
+            }
+
+        } catch (IOException e) {
+            System.err.println("Critical Error: Could not read event file: " + resourceFileName);
             e.printStackTrace();
+            return Collections.emptyList();
         }
-        return events;
     }
 }

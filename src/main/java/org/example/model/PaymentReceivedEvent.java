@@ -1,20 +1,33 @@
 package org.example.model;
 
-import lombok.AllArgsConstructor;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.time.ZonedDateTime;
 import java.util.Date;
 
-@Getter
-@Setter
-public class PaymentReceivedEvent extends BaseEvent{
+public class PaymentReceivedEvent extends Event {
+    private final String orderId;
+    @Getter
+    private final double amountPaid;
 
-    private double amountPaid;
-
-    public PaymentReceivedEvent(String eventId, Date timestamp, String orderId, double amountPaid) {
-        super(eventId, timestamp, "PaymentReceived", orderId);
+    @JsonCreator
+    public PaymentReceivedEvent(
+            @JsonProperty("eventId") String eventId,
+            @JsonProperty("timestamp") ZonedDateTime timestamp,
+            @JsonProperty("orderId") String orderId,
+            @JsonProperty("amountPaid") double amountPaid) {
+        super(eventId, timestamp);
+        this.orderId = orderId;
         this.amountPaid = amountPaid;
     }
+
+    @Override
+    public String getOrderId() { return orderId; }
+    @Override
+    public String getEventType() { return "PaymentReceived"; }
 
 }
